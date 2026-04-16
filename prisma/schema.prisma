@@ -18,17 +18,19 @@ model User {
   image         String?
 
   // Custom fields (TECH_SPEC §II)
-  phone         String?   @unique
-  wechatOpenId  String?   @unique
-  wechatUnionId String?   @unique
+  phone         String? @unique
+  wechatOpenId  String? @unique
+  wechatUnionId String? @unique
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // soft delete for 7-day cooling-off
 
-  accounts Account[]
-  sessions Session[]
-  profile  UserProfile?
+  accounts        Account[]
+  sessions        Session[]
+  profile         UserProfile?
+  resumes         Resume[]
+  jobDescriptions JobDescription[]
 
   @@index([phone])
   @@index([wechatOpenId])
@@ -101,9 +103,98 @@ model UserProfile {
   targetCity        String?
 
   // AI-inferred (internal)
-  writingStyle String?  // formal / casual / mixed
+  writingStyle String? // formal / casual / mixed
   skillTags    String[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ========== Domain: resume ==========
+
+model Resume {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title    String // e.g. "张三的简历"
+  baseInfo Json // { name, phone, email, city, ... } — shared across versions
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  versions ResumeVersion[]
+
+  @@index([userId])
+}
+
+model ResumeVersion {
+  id       String @id @default(cuid())
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  name      String // e.g. "应聘字节-数据分析"
+  isDefault Boolean @default(false)
+
+  // Structured content — see lib/schemas ResumeContent
+  content Json
+
+  // Template id (see Template model); not FK so templates can be pruned safely
+  templateId String
+
+  // Optional JD link
+  jobDescriptionId String?
+  jobDescription   JobDescription? @relation(fields: [jobDescriptionId], references: [id], onDelete: SetNull)
+
+  // Cached match report, sourceFile URL
+  matchAnalysis Json?
+  sourceFileUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resumeId])
+  @@index([jobDescriptionId])
+}
+
+// ========== Domain: job description ==========
+
+model JobDescription {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  rawText String @db.Text
+  parsed  Json? // { position, company, must_have, nice_to_have, ... }
+
+  // Denormalized for quick filtering
+  position String?
+  company  String?
+  location String?
+
+  // Hash over (rawText) for cache lookups
+  contentHash String
+
+  createdAt DateTime @default(now())
+
+  resumeVersions ResumeVersion[]
+
+  @@index([userId])
+  @@index([contentHash])
+}
+
+// ========== Domain: resume templates ==========
+
+model Template {
+  id          String  @id
+  name        String
+  description String?
+  previewUrl  String?
+  category    String // classic / modern / minimal
+  isFree      Boolean @default(true)
+  isActive    Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  // Font, color, layout etc.
+  config Json
 }
