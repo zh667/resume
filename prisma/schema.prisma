@@ -8,4 +8,102 @@ datasource db {
   extensions = [vector]
 }
 
-// Models land in Task 1.4+1.5 onwards.
+// ========== User & Auth.js v5 adapter tables ==========
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  // Custom fields (TECH_SPEC §II)
+  phone         String?   @unique
+  wechatOpenId  String?   @unique
+  wechatUnionId String?   @unique
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // soft delete for 7-day cooling-off
+
+  accounts Account[]
+  sessions Session[]
+  profile  UserProfile?
+
+  @@index([phone])
+  @@index([wechatOpenId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ========== Domain: user profile ==========
+
+model UserProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Basic profile
+  realName        String?
+  city            String?
+  education       String? // 本科 / 硕士 / 博士
+  school          String?
+  major           String?
+  workYears       Int?
+  currentIndustry String?
+  currentRole     String?
+
+  // Career intent
+  targetIndustry    String?
+  targetRole        String?
+  expectedSalaryMin Int? // monthly, in CNY
+  expectedSalaryMax Int?
+  targetCity        String?
+
+  // AI-inferred (internal)
+  writingStyle String?  // formal / casual / mixed
+  skillTags    String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
