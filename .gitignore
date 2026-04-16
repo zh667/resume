@@ -5,6 +5,9 @@ docs/
 .omc/
 .claude/
 
+# local-only screenshots / assets
+images/
+
 # dependencies
 node_modules/
 /.pnp
