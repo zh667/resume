@@ -1,6 +1,6 @@
 # Resume — AI 求职陪跑教练
 
-Next.js 15 MVP. Design docs are kept locally in `docs/` (not pushed).
+Next.js 16 MVP. Design docs are kept locally in `docs/` (not pushed).
 
 ## Prerequisites
 - Node.js 24 (see `.nvmrc`)
@@ -16,8 +16,8 @@ npm run dev
 Open http://localhost:3000.
 
 ## Stack (MVP)
-- Next.js 15 (App Router) · React 19 · TypeScript
-- TailwindCSS · shadcn/ui
+- Next.js 16 (App Router) · React 19 · TypeScript
+- TailwindCSS v4 · shadcn/ui
 - Prisma · Supabase Postgres + pgvector
 - Auth.js v5
 
